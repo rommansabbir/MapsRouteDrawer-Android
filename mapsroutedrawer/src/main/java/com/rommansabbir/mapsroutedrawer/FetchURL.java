@@ -16,19 +16,22 @@ public class FetchURL extends AsyncTask<String, Void, String> {
     String directionMode;
     Integer drivingColor;
     Integer walkingColor;
+    Integer lineOptionWidth;
 
     /**
      * Instantiate with context and essential components
      * @param context
      * @param directionMode
+     * @param lineOptionWidth
      * @param drivingColor
      * @param walkingColor
      */
-    public FetchURL(Context context, String directionMode, Integer drivingColor, Integer walkingColor) {
+    public FetchURL(Context context, String directionMode,Integer lineOptionWidth, Integer drivingColor, Integer walkingColor) {
         this.mContext = context;
         this.directionMode = directionMode;
         this.drivingColor = drivingColor;
         this.walkingColor = walkingColor;
+        this.lineOptionWidth = lineOptionWidth;
     }
 
     @Override
@@ -50,7 +53,7 @@ public class FetchURL extends AsyncTask<String, Void, String> {
     @Override
     protected void onPostExecute(String s) {
         super.onPostExecute(s);
-        PointsParser parserTask = new PointsParser(mContext, directionMode, Float.valueOf(10), drivingColor, walkingColor);
+        PointsParser parserTask = new PointsParser(mContext, directionMode, Float.valueOf(lineOptionWidth), drivingColor, walkingColor);
         /**
          * Invokes the thread for parsing the JSON data
          */
