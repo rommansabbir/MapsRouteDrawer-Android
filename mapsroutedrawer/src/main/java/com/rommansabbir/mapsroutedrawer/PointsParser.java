@@ -1,7 +1,6 @@
 package com.rommansabbir.mapsroutedrawer;
 
 import android.content.Context;
-import android.graphics.Color;
 import android.os.AsyncTask;
 import android.util.Log;
 
@@ -15,11 +14,14 @@ import java.util.HashMap;
 import java.util.List;
 
 public class PointsParser extends AsyncTask<String, Integer, List<List<HashMap<String, String>>>> {
+    private static final String TAG = "PointsParser";
     TaskLoadedCallback taskCallback;
     String directionMode = "driving";
     Float lineOptionWidth;
     Integer drivingColor;
     Integer walkingColor;
+    HashMap<String, String> point;
+    List<HashMap<String, String>> path;
 
     /**
      *
@@ -50,17 +52,14 @@ public class PointsParser extends AsyncTask<String, Integer, List<List<HashMap<S
 
         try {
             jObject = new JSONObject(jsonData[0]);
-            Log.d("mylog", jsonData[0].toString());
             DataParser parser = new DataParser();
-            Log.d("mylog", parser.toString());
-
-            // Starts parsing data
+            /**
+             * Starts parsing data
+             */
             routes = parser.parse(jObject);
-            Log.d("mylog", "Executing routes");
-            Log.d("mylog", routes.toString());
 
         } catch (Exception e) {
-            Log.d("mylog", e.toString());
+            Log.d(TAG, "doInBackground: "+e.getMessage());
             e.printStackTrace();
         }
         return routes;
@@ -73,6 +72,7 @@ public class PointsParser extends AsyncTask<String, Integer, List<List<HashMap<S
     @Override
     protected void onPostExecute(List<List<HashMap<String, String>>> result) {
         ArrayList<LatLng> points;
+        List<HashMap<String, String>> maneuverList = new ArrayList<>();
         PolylineOptions lineOptions = null;
         /**
          * Traversing through all the routes
@@ -83,29 +83,48 @@ public class PointsParser extends AsyncTask<String, Integer, List<List<HashMap<S
             /**
              * Fetching i-th route
              */
-            List<HashMap<String, String>> path = result.get(i);
+            path = result.get(i);
             /**
              * Fetching all the points in i-th route
              */
             for (int j = 0; j < path.size(); j++) {
-                HashMap<String, String> point = path.get(j);
+                point = path.get(j);
                 double lat = Double.parseDouble(point.get("lat"));
                 double lng = Double.parseDouble(point.get("lng"));
                 LatLng position = new LatLng(lat, lng);
                 points.add(position);
+
+                /**
+                 * Fetching all maneuver from result
+                 */
+                HashMap<String, String> tempManeuver = new HashMap<>();
+                tempManeuver.put("lat", String.valueOf(lat));
+                tempManeuver.put("lng", String.valueOf(lng));
+                tempManeuver.put("maneuver", point.get("maneuver"));
+                maneuverList.add(tempManeuver);
+
             }
             /**
              * Adding all the points in the route to LineOptions
              */
-            lineOptions.addAll(points);
-            if (directionMode.equalsIgnoreCase("walking")) {
-                lineOptions.width(lineOptionWidth);
-                lineOptions.color(walkingColor);
-            } else {
-                lineOptions.width(lineOptionWidth);
-                lineOptions.color(drivingColor);
+            if(lineOptions != null){
+                lineOptions.addAll(points);
+                if (directionMode.equalsIgnoreCase("walking")) {
+                    lineOptions.width(lineOptionWidth);
+                    lineOptions.color(walkingColor);
+                } else {
+                    lineOptions.width(lineOptionWidth);
+                    lineOptions.color(drivingColor);
+                }
+                Log.d(TAG, "onPostExecute: ");
+
+                if(points.size() == maneuverList.size()){
+                    /**
+                     * Notify the interface on maneuver list received
+                     */
+                    taskCallback.onManeuverListReceived(maneuverList);
+                }
             }
-            Log.d("mylog", "onPostExecute lineoptions decoded");
         }
 
         /**
@@ -118,7 +137,7 @@ public class PointsParser extends AsyncTask<String, Integer, List<List<HashMap<S
             taskCallback.onTaskDone(lineOptions);
 
         } else {
-            Log.d("mylog", "without Polylines drawn");
+            Log.d(TAG, "onPostExecute: "+"PolylineOptions null");
         }
     }
 }

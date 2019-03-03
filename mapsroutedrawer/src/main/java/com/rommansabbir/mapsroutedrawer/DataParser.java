@@ -1,10 +1,13 @@
 package com.rommansabbir.mapsroutedrawer;
 
+import android.util.Log;
+
 import com.google.android.gms.maps.model.LatLng;
 
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.json.JSONStringer;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -12,6 +15,7 @@ import java.util.List;
 
 
 public class DataParser {
+    private static final String TAG = "DataParser";
     /**
      * @param jObject
      * @return
@@ -22,6 +26,7 @@ public class DataParser {
         JSONArray jRoutes;
         JSONArray jLegs;
         JSONArray jSteps;
+        String jManeuver;
         try {
             jRoutes = jObject.getJSONArray("routes");
             /** Traversing all routes */
@@ -44,6 +49,20 @@ public class DataParser {
                             hm.put("lat", Double.toString((list.get(l)).latitude));
                             hm.put("lng", Double.toString((list.get(l)).longitude));
                             path.add(hm);
+                            /**
+                             * Checking if maneuver exist or not
+                             * If exist, get the value
+                             * Else, put null
+                             */
+                            if(((JSONObject) jSteps.get(k)).has("maneuver")){
+                                jManeuver = (String) ((JSONObject) jSteps.get(k)).get("maneuver").toString();
+                                String maneuverTemp = jManeuver.replace("-", " ");
+                                hm.put("maneuver", maneuverTemp);
+                                Log.d(TAG, "parse: "+maneuverTemp);
+                            }
+                            else {
+                                hm.put("maneuver", "null");
+                            }
                         }
                     }
                     routes.add(path);
@@ -52,12 +71,19 @@ public class DataParser {
 
         } catch (JSONException e) {
             e.printStackTrace();
+            Log.d(TAG, "parse: "+e.getMessage());
         } catch (Exception e) {
+            Log.d(TAG, "parse: "+e.getMessage());
         }
         return routes;
     }
 
 
+    /**
+     * Decode polyline
+     * @param encoded
+     * @return
+     */
     private List<LatLng> decodePoly(String encoded) {
         List<LatLng> poly = new ArrayList<>();
         int index = 0, len = encoded.length();
